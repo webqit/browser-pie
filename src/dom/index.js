@@ -14,7 +14,10 @@ import el from './el.js';
  * ---------------------------
  */
 
- export default function init(window, params = {}) {
+export default function init(window, params = {}) {
+    if (window.WQ && window.WQ.DOM) {
+        return window.WQ.DOM;
+    }
     const Ctxt = ENV.create(window, 'DOM', params);
     Ctxt.ready = new Promise(resolve => {
         window.document.addEventListener('DOMContentLoaded', () => resolve(window), false);

@@ -13,6 +13,9 @@ import fetch from './fetch.js';
  */
 
  export default function init(window, params = {}) {
+    if (window.WQ && window.WQ.APIS) {
+        return window.WQ.APIS;
+    }
     const Ctxt = ENV.create(window, 'APIS', params);
     // ------
     Ctxt.matchRect = matchRect;

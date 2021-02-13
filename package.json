@@ -6,8 +6,8 @@
     "browser",
     "utilities"
   ],
-  "homepage": "https://webqit.dev/tooling/browser-pie",
-  "version": "0.0.3",
+  "homepage": "https://webqit.io/tooling/browser-pie",
+  "version": "0.0.6",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "build": "webpack --config ./webpack.config.cjs"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@webqit/util": "^0.7.0"

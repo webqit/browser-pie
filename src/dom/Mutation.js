@@ -183,7 +183,7 @@ export default class Mutation {
 		};
 		var added = [], removed = [];
 		var subject = params.context || this.Ctxt.window.document.documentElement;
-		var mo = new this.Ctxt.window.MutationObserver(mutations => {
+		var mo = this._observe(subject, mutations => {
 			if (!params.on || params.on === 'added') {
 				var matchedAddedNodes = [];
 				els.forEach(el => {
@@ -243,7 +243,6 @@ export default class Mutation {
 				}
 			}
 		});
-		mo.observe(subject, {childList:true, subtree:true});
 		return mo;
 	}
 
@@ -302,4 +301,27 @@ export default class Mutation {
 		observer.observe(el, params);
 		return observer;
 	}
+
+	/**
+	 * 
+	 * @param Element subject 
+	 * @param Function callback 
+	 */
+	_observe(subject, callback) {
+		if (!MutationObserversCache.has(subject)) {
+			const callbacks = [];
+			const observer = new this.Ctxt.window.MutationObserver(mutations => {
+				callbacks.forEach(callback => callback(mutations));
+			});
+			observer.observe(subject, {childList:true, subtree:true});
+			MutationObserversCache.set(subject, {callbacks, observer});
+		}
+		const _observer = MutationObserversCache.get(subject);
+		_observer.callbacks.push(callback);
+		return {disconnect() {
+			_observer.callbacks = _observer.callbacks.filter(cb => cb !== callback);
+		}};
+	}
 };
+
+const MutationObserversCache = new Map();

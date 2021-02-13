@@ -16,29 +16,26 @@ import { getVendor, getPrefix } from './vendor.js';
     static create(window, scope = null, params = {}) {
         // Create global scope?
         if (!window.WQ) {
+            window.WQ = {};
+        }
+        if (!window.WQ.window) {
             // Is this params for global or sub scope?
             let _params = scope ? {} : params;
             let _vendor, _prefix;
-            window.WQ = {
-                get window() {
-                    return window;
-                },
-                get params() {
-                    return _params;
-                },
-                get vendor() {
-                    if (!_vendor) {
-                        _vendor = getVendor(window);
-                    }
-                    return _vendor;
-                },
-                get prefix() {
-                    if (!_prefix) {
-                        _prefix = getPrefix(window);
-                    }
-                    return _prefix;
-                },
-            };
+            Object.defineProperty(window.WQ, 'window', {get: () => window});
+            Object.defineProperty(window.WQ, 'params', {get: () => _params});
+            Object.defineProperty(window.WQ, 'vendor', {get: () => {
+                if (!_vendor) {
+                    _vendor = getVendor(window);
+                }
+                return _vendor;
+            }});
+            Object.defineProperty(window.WQ, 'prefix', {get: () => {
+                if (!_prefix) {
+                    _prefix = getPrefix(window);
+                }
+                return _prefix;
+            }});
         } else if (!scope && !_isEmpty(params) && window.WQ.params !== params) {
             throw new Error('Window has already been initialized with a different parans object.')
         }
