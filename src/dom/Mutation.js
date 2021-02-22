@@ -184,8 +184,9 @@ export default class Mutation {
 		var added = [], removed = [];
 		var subject = params.context || this.Ctxt.window.document.documentElement;
 		var mo = this._observe(subject, mutations => {
+			var matchedAddedNodes = [];
+			var matchedRemovedNodes = [];
 			if (!params.on || params.on === 'added') {
-				var matchedAddedNodes = [];
 				els.forEach(el => {
 					if (_isString(el)) {
 						matchedAddedNodes = mutations
@@ -198,23 +199,8 @@ export default class Mutation {
 						}
 					}
 				});
-				if (matchedAddedNodes.length) {
-					if (params.onceEach) {
-						var newlyadded = _difference(matchedAddedNodes, added);
-						if (newlyadded.length) {
-							added.push(...newlyadded);
-							callback(newlyadded, 1);
-						}
-					} else {
-						if (params.once) {
-							mo.disconnect();
-						}
-						callback(matchedAddedNodes, 1);
-					}
-				}
 			}
 			if (!params.on || params.on === 'removed') {
-				var matchedRemovedNodes = [];
 				els.forEach(el => {
 					if (_isString(el)) {
 						matchedRemovedNodes = mutations
@@ -227,21 +213,46 @@ export default class Mutation {
 						}
 					}
 				});
-				if (matchedRemovedNodes.length) {
+			}
+			var addedOnlyNodes = [];
+			var initiallyRemovedThenAddedNodes = [];
+			matchedAddedNodes.forEach(_el => {
+				if (matchedRemovedNodes.includes(_el) && _el.isConnected) {
+					initiallyRemovedThenAddedNodes.push(_el);
+				} else {
+					addedOnlyNodes.push(_el);
+				}
+			});
+			var removedOnlyNodes = [];
+			var initiallyAddedThenRemovedNodes = [];
+			matchedRemovedNodes.forEach(_el => {
+				if (matchedAddedNodes.includes(_el) && !_el.isConnected) {
+					initiallyAddedThenRemovedNodes.push(_el);
+				} else {
+					removedOnlyNodes.push(_el);
+				}
+			});
+			var fire = (list, state) => {
+				if (list.length) {
 					if (params.onceEach) {
-						var newlyremoved = _difference(matchedRemovedNodes, removed);
-						if (newlyremoved.length) {
-							removed.push(...newlyremoved);
-							callback(newlyremoved, 0);
+						var cache = state ? added : removed;
+						var _list = _difference(list, cache);
+						if (_list.length) {
+							cache.push(..._list);
+							callback(_list, state);
 						}
 					} else {
 						if (params.once) {
 							mo.disconnect();
 						}
-						callback(matchedRemovedNodes, 0);
+						callback(list, state);
 					}
 				}
-			}
+			};
+			fire(addedOnlyNodes, 1);
+			fire(initiallyAddedThenRemovedNodes, 0);
+			fire(removedOnlyNodes, 0);
+			fire(initiallyRemovedThenAddedNodes, 1);
 		});
 		return mo;
 	}
