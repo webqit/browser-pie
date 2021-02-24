@@ -55,8 +55,8 @@ export default class Mutation {
 	 */
 	onAdded(els, callback, params = {}) {
 		params.on = 'added';
-		return this.onPresenceChange(els, (el, presence) => {
-			callback(el, presence);
+		return this.onPresenceChange(els, (el, presence, isTransient, addedState, removedState) => {
+			callback(el, presence, isTransient, addedState, removedState);
 		}, params);
 	}
 
@@ -74,8 +74,8 @@ export default class Mutation {
 	 */
 	onRemoved(els, callback, params = {}) {
 		params.on = 'removed';
-		return this.onPresenceChange(els, (el, presence) => {
-			callback(el, presence);
+		return this.onPresenceChange(els, (el, presence, isTransient, addedState, removedState) => {
+			callback(el, presence, isTransient, addedState, removedState);
 		}, params);
 	}
 
@@ -181,78 +181,57 @@ export default class Mutation {
 				}
 			}
 		};
-		var added = [], removed = [];
+		var match = (els, sourceArray) => {
+			// -------------------------------
+			// Search can be expensive...
+			// Multiple listeners searching the same thing in the same list?
+			if (!sourceArray.$$searchCache) {
+				sourceArray.$$searchCache = new Map();
+			}
+			// -------------------------------
+			return els.reduce((matches, el) => {
+				// -------------------------------
+				var _matches;
+				if (sourceArray.$$searchCache.has(el)) {
+					_matches = sourceArray.$$searchCache.get(el);
+				} else {
+					_matches = search(el, sourceArray, _isString(el)) || [];
+					sourceArray.$$searchCache.set(el, _matches);
+				}
+				return matches.concat(_matches);
+			}, []);
+		};
+		var addedState = new Set(), removedState = new Set();
+		var fire = (list, state, isTransient) => {
+			if ((state && params.on === 'removed') || (!state && params.on === 'added')) {
+				return;
+			}
+			if ((list = match(els, list)).length) {
+				if (params.maintainCallState) {
+					list.forEach(el => {
+						if (state) {
+							addedState.add(el);
+							removedState.delete(el);
+						} else {
+							addedState.delete(el);
+							removedState.add(el);
+						}
+					});
+					callback(list, state, isTransient, addedState, removedState);
+				} else {
+					callback(list, state, isTransient);
+				}
+			}
+		};
 		var subject = params.context || this.Ctxt.window.document.documentElement;
-		var mo = this._observe(subject, mutations => {
-			var matchedAddedNodes = [];
-			var matchedRemovedNodes = [];
-			if (!params.on || params.on === 'added') {
-				els.forEach(el => {
-					if (_isString(el)) {
-						matchedAddedNodes = mutations
-							.reduce((matches, mut) => matches.concat(search(el, _arrFrom(mut.addedNodes)) || []), matchedAddedNodes);
-					} else {
-						var matchedAsAddedNode = mutations
-							.reduce((match, mut) => match || (search(el, _arrFrom(mut.addedNodes)) || [])[0], null);
-						if (matchedAsAddedNode) {
-							matchedAddedNodes.push(matchedAsAddedNode);
-						}
-					}
-				});
+		var mo = this._observe(subject, (removed__addedNodes, added__removedNodes, addedNodes, removedNodes) => {
+			if (!params.ignoreTransients) {
+				fire(removed__addedNodes, 0, true);
+				fire(removed__addedNodes.concat(added__removedNodes), 1, true);
+				fire(added__removedNodes, 0, true);
 			}
-			if (!params.on || params.on === 'removed') {
-				els.forEach(el => {
-					if (_isString(el)) {
-						matchedRemovedNodes = mutations
-							.reduce((matches, mut) => matches.concat(search(el, _arrFrom(mut.removedNodes)) || []), matchedRemovedNodes);
-					} else {
-						var matchedAsRemovedNode = mutations
-							.reduce((match, mut) => match || (search(el, _arrFrom(mut.removedNodes)) || [])[0], null);
-						if (matchedAsRemovedNode) {
-							matchedRemovedNodes.push(matchedAsRemovedNode);
-						}
-					}
-				});
-			}
-			var addedOnlyNodes = [];
-			var initiallyRemovedThenAddedNodes = [];
-			matchedAddedNodes.forEach(_el => {
-				if (matchedRemovedNodes.includes(_el) && _el.isConnected) {
-					initiallyRemovedThenAddedNodes.push(_el);
-				} else {
-					addedOnlyNodes.push(_el);
-				}
-			});
-			var removedOnlyNodes = [];
-			var initiallyAddedThenRemovedNodes = [];
-			matchedRemovedNodes.forEach(_el => {
-				if (matchedAddedNodes.includes(_el) && !_el.isConnected) {
-					initiallyAddedThenRemovedNodes.push(_el);
-				} else {
-					removedOnlyNodes.push(_el);
-				}
-			});
-			var fire = (list, state) => {
-				if (list.length) {
-					if (params.onceEach) {
-						var cache = state ? added : removed;
-						var _list = _difference(list, cache);
-						if (_list.length) {
-							cache.push(..._list);
-							callback(_list, state);
-						}
-					} else {
-						if (params.once) {
-							mo.disconnect();
-						}
-						callback(list, state);
-					}
-				}
-			};
-			fire(addedOnlyNodes, 1);
-			fire(initiallyAddedThenRemovedNodes, 0);
-			fire(removedOnlyNodes, 0);
-			fire(initiallyRemovedThenAddedNodes, 1);
+			fire(removedNodes, 0);
+			fire(addedNodes, 1);
 		});
 		return mo;
 	}
@@ -320,17 +299,45 @@ export default class Mutation {
 	 */
 	_observe(subject, callback) {
 		if (!MutationObserversCache.has(subject)) {
-			const callbacks = [];
+			const callbacks = new Set();
 			const observer = new this.Ctxt.window.MutationObserver(mutations => {
-				callbacks.forEach(callback => callback(mutations));
+				if (!callbacks.size) {
+					return;
+				}
+
+				var addedNodes = mutations.reduce((list, mut) => list.concat(_arrFrom(mut.addedNodes)), []),
+				removedNodes = mutations.reduce((list, mut) => list.concat(_arrFrom(mut.removedNodes)), []),
+				removed__addedNodes = [],
+				added__removedNodes = [];
+
+				addedNodes = new Set(addedNodes);
+				removedNodes = new Set(removedNodes);
+				addedNodes.forEach(el => {
+					if (removedNodes.has(el)) {
+						removedNodes.delete(el);
+						addedNodes.delete(el);
+						if (el.isConnected) {
+							removed__addedNodes.push(el);
+						} else {
+							added__removedNodes.push(el);
+						}
+					}
+				});
+				
+				addedNodes = [...addedNodes];
+				removedNodes = [...removedNodes];
+
+				callbacks.forEach(callback => callback(removed__addedNodes, added__removedNodes, addedNodes, removedNodes));
 			});
 			observer.observe(subject, {childList:true, subtree:true});
 			MutationObserversCache.set(subject, {callbacks, observer});
 		}
 		const _observer = MutationObserversCache.get(subject);
-		_observer.callbacks.push(callback);
+		_observer.callbacks.add(callback);
 		return {disconnect() {
-			_observer.callbacks = _observer.callbacks.filter(cb => cb !== callback);
+			_observer.callbacks.delete(callback);
+		}, reconnect() {
+			_observer.callbacks.add(callback);
 		}};
 	}
 };
