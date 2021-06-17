@@ -2,6 +2,6 @@
 /**
  * @imports
  */
-import APISInit from './index.js';
+import init from './index.js';
 
-APISInit(window);
+init.call(window);

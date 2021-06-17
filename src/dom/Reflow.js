@@ -14,32 +14,20 @@ import _each from '@webqit/util/obj/each.js';
 export default class Reflow {
 
 	/**
-	 * Inits Ctxt.
-	 *
-	 * @return this
-	 */
-	static init(Ctxt) {
-		if (Ctxt.Reflow) {
-			return;
-		}
-		Ctxt.Reflow = new this(Ctxt);
-		Ctxt.Reflow._run();
-	}
-
-	/**
 	 * Starts the loop.
 	 *
 	 * @return this
 	 */
-	constructor(Ctxt) {
-		this.Ctxt = Ctxt;
+	constructor(window, asyncDOM = true) {
+		this.window = window;
+		this.async = asyncDOM;
 		this.readCallbacks = [];
 		this.writeCallbacks = [];
-		this.async = this.Ctxt.params.asyncDOM;
+		this._run();
 	}
 
 	_run() {
-		this.Ctxt.window.requestAnimationFrame(() => {
+		this.window.requestAnimationFrame(() => {
 			this.readCallbacks.forEach((callback, i) => {
 				if (callback && !callback()) {
 					this.readCallbacks[i] = null;

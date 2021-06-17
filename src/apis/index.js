@@ -2,7 +2,7 @@
 /**
  * @imports
  */
-import ENV from '../ENV.js';
+import init from '../index.js';
 import matchRect from './matchRect.js';
 import fetch from './fetch.js';
 
@@ -12,14 +12,14 @@ import fetch from './fetch.js';
  * ---------------------------
  */
 
- export default function init(window, params = {}) {
-    if (window.WQ && window.WQ.APIS) {
-        return window.WQ.APIS;
+export default function() {
+    const WebQit = init.call(this);
+    if (WebQit.APIS) {
+        return WebQit;
     }
-    const Ctxt = ENV.create(window, 'APIS', params);
+    WebQit.APIS = {};
+    WebQit.APIS.matchRect = matchRect;
+    WebQit.APIS.fetch = fetch;
     // ------
-    Ctxt.matchRect = matchRect;
-    Ctxt.fetch = fetch;
-    // ------
-    return Ctxt;
-};
+    return WebQit;
+}

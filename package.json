@@ -17,9 +17,11 @@
     "url": "https://github.com/webqit/browser-pie/issues"
   },
   "type": "module",
-  "main": "src/index.js",
+  "sideEffects": false,
+  "main": "./src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack --config ./webpack.config.cjs",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@webqit/util": "^0.7.0"

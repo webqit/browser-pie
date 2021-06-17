@@ -6,7 +6,7 @@
  *
  * @return string
  */
-export function getVendor(window) {
+export function getName(window) {
     // Firefox 1.0+
     var isFirefox = typeof window.InstallTrigger !== 'undefined';
     if (isFirefox) {

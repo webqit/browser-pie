@@ -2,6 +2,6 @@
 /**
  * @imports
  */
-import DOMInit from './index.js';
+import init from './index.js';
 
-DOMInit(window);
+init.call(window);

@@ -2,11 +2,11 @@
 /**
  * Applies all supported polyfills
  */
-export default function(Ctxt) {
-    CSS_escape(Ctxt.window);
-    Element_matches(Ctxt.window);
-    Node_isConnected(Ctxt.window);
-};
+export default function(window) {
+    CSS_escape(window);
+    Node_isConnected(window);
+    Element_matches(window);
+}
 
 /**
  * Polyfills the window.CSS object.
@@ -27,7 +27,7 @@ export function CSS_escape(window) {
          */
         window.CSS.escape = str => str.replace(/([\:@\~\$\&])/g, '\\$1');
     }
-};
+}
 
 /**
  * Polyfills the Node.prototype.isConnected property
@@ -44,7 +44,7 @@ export function Node_isConnected(window) {
                 & this.DOCUMENT_POSITION_DISCONNECTED);
         }});
     }
-}; 
+}
 
 /**
  * Polyfills the Element.prototype.matches() method
@@ -68,52 +68,4 @@ export function Element_matches(window) {
             return i > -1;            
         };
     }
-}; 
-
-/**
- * Queries a DOM context for elements matching
- * the given selector.
- *
- * @param window 				window
- * @param string 				selector
- * @param document|Element	    context
- * @param bool		 			all
- *
- * @return Element|DOMNodeList
- */
-export function querySelector(window, selector, context = null, all = false) {
-    context = context || window.document;
-	var matchedItems, method = all ? 'querySelectorAll' : 'querySelector';
-	try {
-		matchedItems = context[method](selector);
-	} catch(e) {
-		try {
-			matchedItems = context[method](selector.replace(/\:is\(/g, ':matches('));
-		} catch(e) {
-			try {
-				matchedItems = context[method](selector.replace(/\:is\(/g, ':-webkit-any('));
-			} catch(e) {
-				try {
-					matchedItems = context[method](selector.replace(/\:is\(/g, ':-moz-any('));
-				} catch(e) {
-					throw e;
-				}
-			}
-		}
-	}
-	return matchedItems;
-};
-
-/**
- * Queries a DOM context for elements matching
- * the given selector.
- *
- * @param window 				window
- * @param string 				selector
- * @param document|Element	    context
- *
- * @return DOMNodeList
- */
-export function querySelectorAll(window, selector, context = window.document) {
-    return querySelector(window, selector, context, true);
-};
+}

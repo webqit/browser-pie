@@ -2,11 +2,13 @@
 /**
  * @imports
  */
-import ENV from '../ENV.js';
+import init from '../index.js';
 import Reflow from './Reflow.js';
-import Mutation from './Mutation.js';
+import Mutations from './Mutations.js';
 import polyfill from './polyfills.js';
-import el from './el.js';
+import query, { querySelector, querySelectorAll } from './query.js';
+import ready from './ready.js';
+import meta from './meta.js';
 
 /**
  * ---------------------------
@@ -14,22 +16,26 @@ import el from './el.js';
  * ---------------------------
  */
 
-export default function init(window, params = {}) {
-    if (window.WQ && window.WQ.DOM) {
-        return window.WQ.DOM;
+export default function() {
+    const WebQit = init.call(this);
+    if (WebQit.DOM) {
+        return WebQit;
     }
-    const Ctxt = ENV.create(window, 'DOM', params);
-    Ctxt.ready = new Promise(resolve => {
-        window.document.addEventListener('DOMContentLoaded', () => resolve(window), false);
-        if (window.document.readyState === 'complete') {
-            resolve(window);
-        }
-    });
-    Ctxt.el = query => el(window, query);
+    WebQit.DOM = {};
+    polyfill(WebQit.window);
+    WebQit.DOM.reflow = new Reflow(WebQit.window);
+    WebQit.DOM.mutations = new Mutations(WebQit.window);
+    WebQit.DOM.meta = meta.bind(WebQit.window);
+    WebQit.DOM.query = query.bind(WebQit.window);
+    WebQit.DOM.ready = ready.bind(WebQit.window);
     // ------
-    polyfill(Ctxt);
-    Reflow.init(Ctxt);
-    Mutation.init(Ctxt);
-    // ------
-    return Ctxt;
-};
+    return WebQit;
+}
+
+export {
+    meta,
+    query,
+    querySelector,
+    querySelectorAll,
+    ready,
+}
