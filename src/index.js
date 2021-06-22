@@ -23,6 +23,8 @@ export default function() {
     // Create global scope?
     if (!_window.WebQit) {
         _window.WebQit = {};
+    }
+    if (!_window.WebQit.window) {
         // Is this params for global or sub scope?
         let _vendor, _prefix;
         Object.defineProperty(_window.WebQit, 'window', {get: () => _window});
