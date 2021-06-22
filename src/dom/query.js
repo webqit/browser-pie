@@ -7,31 +7,46 @@ import _arrFrom from '@webqit/util/arr/from.js';
 import init from '../index.js';
 
 /**
- * Creates a DOM element
- * from any of markup, selector, HTMLElement.
+ * Creates one or a list of DOM elements
+ * from an input of markup, selector, HTMLElement.
  *
  * @param mixed 				input
+ * @param document|Element	    context
+ * @param bool		 			all
  *
- * @return Array
+ * @return Element|Array
  */
-export default function(input) {
+export default function query(input, context = null, all = false) {
 	const WebQit = init.call(this);
 	if (_isString(input)) {
 		var els;
 		if (input.trim().startsWith('<')) {
 			// Create a node from markup
 			var temp = WebQit.window.document.createElement('div');
-			temp.innerHtml = input;
-			els = [temp.firstChild];
+			temp.innerHTML = input;
+			els = all ? _arrFrom(temp.children) : temp.firstChild;
 		} else {
-			els = _arrFrom(querySelectorAll.call(this, input));
+			els = all ? _arrFrom(querySelectorAll.call(this, input, context)) : querySelector.call(this, input, context);
 		}
 		return els;
 	}
 	if (input instanceof WebQit.window.Element) {
-		return [input];
+		return all ? [input] : input;
 	}
-	return _arrFrom(input);
+	return all ? _arrFrom(input) : input;
+}
+
+/**
+ * Creates a list of DOM elements
+ * from an input of markup, selector, HTMLElement.
+ *
+ * @param mixed 				input
+ * @param document|Element	    context
+ *
+ * @return Array
+ */
+export function queryAll(selector, context = null) {
+    return query.call(this, selector, context, true);
 }
 
 /**
@@ -77,6 +92,6 @@ export function querySelector(selector, context = null, all = false) {
  *
  * @return DOMNodeList
  */
-export function querySelectorAll(selector, context = bull) {
+export function querySelectorAll(selector, context = null) {
     return querySelector.call(this, selector, context, true);
 }

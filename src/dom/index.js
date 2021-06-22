@@ -6,7 +6,7 @@ import init from '../index.js';
 import Reflow from './Reflow.js';
 import Mutations from './Mutations.js';
 import polyfill from './polyfills.js';
-import query, { querySelector, querySelectorAll } from './query.js';
+import query, { queryAll, querySelector, querySelectorAll } from './query.js';
 import ready from './ready.js';
 import meta from './meta.js';
 
@@ -27,6 +27,7 @@ export default function() {
     WebQit.DOM.mutations = new Mutations(WebQit.window);
     WebQit.DOM.meta = meta.bind(WebQit.window);
     WebQit.DOM.query = query.bind(WebQit.window);
+    WebQit.DOM.queryAll = queryAll.bind(WebQit.window);
     WebQit.DOM.ready = ready.bind(WebQit.window);
     // ------
     return WebQit;
@@ -35,6 +36,7 @@ export default function() {
 export {
     meta,
     query,
+    queryAll,
     querySelector,
     querySelectorAll,
     ready,
