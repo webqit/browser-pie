@@ -8,6 +8,7 @@ import _merge from '@webqit/util/obj/merge.js';
 import _set from '@webqit/util/obj/set.js';
 import _get from '@webqit/util/obj/get.js';
 import _del from '@webqit/util/obj/del.js';
+import _has from '@webqit/util/obj/has.js';
 import init from '../index.js';
 
 /**
@@ -55,13 +56,13 @@ export default function meta(name, readWrite = false) {
             } else if (_isObject(props[name])) {
                 Object.keys(props[name]).forEach(_prop => {
                     var _path = (name + '.' + _prop).split('.');
-                    if (!asDefaults || !_get(this.vars, _path)) {
+                    if (!asDefaults || !_has(this.vars, _path)) {
                         _set(this.vars, _path, props[name][_prop]);
                     }
                 });
             } else {
                 var _path = name.split('.');
-                if (!asDefaults || !_get(this.vars, _path)) {
+                if (!asDefaults || !_has(this.vars, _path)) {
                     _set(this.vars, _path, props[name]);
                 }
             }
